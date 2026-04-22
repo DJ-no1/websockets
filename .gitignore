@@ -1,0 +1,5 @@
+.excalidraw_files
+node_modules
+dist
+.excalidraw-copilot
+excalidraw_context.md
