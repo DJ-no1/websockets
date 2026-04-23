@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10000 Boxes</title>
+    <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #020817;
+            --border: #e2e8f0;
+            --primary: #0f172a;
+            --primary-foreground: #f8fafc;
+            --muted: #f1f5f9;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--foreground);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(20px, 1fr));
+            grid-template-columns: repeat(100, 20px);
+            /* Fixed 100 columns for 10000 */
+            gap: 4px;
+            justify-content: center;
+            max-width: fit-content;
+        }
+
+        .box {
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            /* Shadcn tick box aesthetic */
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .box:hover {
+            border-color: var(--primary);
+        }
+
+        .box.checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Tick mark SVG as background image */
+        .box.checked::after {
+            content: "";
+            display: block;
+            width: 12px;
+            height: 12px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* Name pop animation */
+        .name-pop {
+            position: absolute;
+            top: -25px;
+            background: var(--foreground);
+            color: var(--background);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            pointer-events: none;
+            white-space: nowrap;
+            animation: popFade 1.2s forwards ease-out;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes popFade {
+            0% {
+                opacity: 0;
+                transform: translateY(5px) scale(0.9);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            80% {
+                opacity: 1;
+                transform: translateY(-5px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Container for absolute positioning of popups */
+        .box {
+            position: relative;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 2500px) {
+            #grid {
+                grid-template-columns: repeat(auto-fill, 20px);
+                max-width: 100%;
+            }
+        }
+
+        /* Modal Overlay & Card */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(2, 8, 23, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-description {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .modal-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .modal-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            padding: 10px 16px;
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .modal-button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Username Modal Overlay -->
+    <div id="usernameModal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 class="modal-title">Welcome</h2>
+            <p class="modal-description">Enter your name to start checking boxes.</p>
+            <input type="text" id="nameInput" class="modal-input" placeholder="Your name (max 10 chars)" maxlength="10"
+                autocomplete="off" autofocus>
+            <button id="joinBtn" class="modal-button">Join</button>
+        </div>
+    </div>
+
+    <h1>10000 Boxes</h1>
+    <div id="grid"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let userName = "Anon";
+
+        // Handle Modal Setup
+        const modalOverlay = document.getElementById('usernameModal');
+        const nameInput = document.getElementById('nameInput');
+        const joinBtn = document.getElementById('joinBtn');
+
+        nameInput.focus();
+
+        function joinGame() {
+            const inputVal = nameInput.value.substring(0, 10).trim();
+            if (inputVal) {
+                userName = inputVal;
+            }
+            modalOverlay.style.display = 'none';
+        }
+
+        joinBtn.addEventListener('click', joinGame);
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinGame();
+        });
+
+        const socket = io();
+
+        const grid = document.getElementById('grid');
+        const TOTAL_BOXES = 10000;
+
+        const fragment = document.createDocumentFragment();
+
+        for (let i = 0; i < TOTAL_BOXES; i++) {
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.dataset.index = i;
+
+            box.addEventListener('click', () => {
+                const isChecked = !box.classList.contains('checked');
+
+                if (isChecked) {
+                    // Check logic - Broadcast the event with name
+                    box.classList.add('checked');
+                    socket.emit('box_clicked', { index: i, checked: true, name: userName });
+                } else {
+                    // Uncheck logic - Update UI, Broadcast WITHOUT name
+                    box.classList.remove('checked');
+                    socket.emit('box_clicked', { index: i, checked: false });
+                }
+            });
+
+            fragment.appendChild(box);
+        }
+
+        grid.appendChild(fragment);
+
+        //fetch data from redis and update the UI
+        socket.on('initial_box_states', (boxStates) => {
+            for (let i = 0; i < boxStates.length; i++) {
+                const box = document.querySelector(`.box[data-index="${i}"]`);
+                if (box) {
+                    if (boxStates[i] === 1) {
+                        box.classList.add('checked');
+                    } else {
+                        box.classList.remove('checked');
+                    }
+                }
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server:', socket.id);
+        });
+
+        socket.on('box_clicked', (click) => {
+            const box = document.querySelector(`.box[data-index="${click.index}"]`);
+            if (box) {
+                if (click.checked) {
+                    box.classList.add('checked');
+
+                    // Show name popup
+                    if (click.name) {
+                        const pop = document.createElement('div');
+                        pop.className = 'name-pop';
+                        pop.textContent = click.name;
+                        box.appendChild(pop);
+
+                        // Cleanup element after animation ends
+                        setTimeout(() => {
+                            if (box.contains(pop)) {
+                                box.removeChild(pop);
+                            }
+                        }, 1200);
+                    }
+                } else {
+                    box.classList.remove('checked');
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
