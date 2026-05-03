@@ -331,7 +331,6 @@
           myCurrentLocationMarker = L.marker([latitude, longitude], { icon })
             .addTo(map)
             .bindPopup('You are here');
-          map.setView([latitude, longitude], 14);
         } else {
           myCurrentLocationMarker.setLatLng([latitude, longitude]);
           myCurrentLocationMarker.setIcon(icon);
