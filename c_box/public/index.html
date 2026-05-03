@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>10000 Boxes</title>
+    <title>1 Million Boxes</title>
     <style>
         :root {
             --background: #ffffff;
@@ -13,6 +13,7 @@
             --primary: #0f172a;
             --primary-foreground: #f8fafc;
             --muted: #f1f5f9;
+            --muted-foreground: #64748b;
         }
 
         body {
@@ -26,64 +27,46 @@
             align-items: center;
         }
 
+        .page-header {
+            width: min(100%, 960px);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+
         h1 {
             font-size: 2rem;
             font-weight: 700;
             letter-spacing: -0.025em;
-            margin-bottom: 2rem;
-            text-align: center;
+            margin: 0;
         }
 
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(20px, 1fr));
-            grid-template-columns: repeat(100, 20px);
-            /* Fixed 100 columns for 10000 */
-            gap: 4px;
-            justify-content: center;
-            max-width: fit-content;
+        .status {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
         }
 
-        .box {
-            width: 20px;
-            height: 20px;
-            background-color: transparent;
+        .grid-shell {
+            position: relative;
+            width: 100%;
+            overflow: auto;
             border: 1px solid var(--border);
-            border-radius: 4px;
-            /* Shadcn tick box aesthetic */
+            border-radius: 8px;
+            background: var(--background);
             box-sizing: border-box;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .box:hover {
-            border-color: var(--primary);
-        }
-
-        .box.checked {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        /* Tick mark SVG as background image */
-        .box.checked::after {
-            content: "";
+        #gridCanvas {
             display: block;
-            width: 12px;
-            height: 12px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
+            cursor: pointer;
         }
 
-        /* Name pop animation */
-        .name-pop {
+        .name-pop,
+        .toast {
             position: absolute;
-            top: -25px;
             background: var(--foreground);
             color: var(--background);
             font-size: 10px;
@@ -94,6 +77,16 @@
             animation: popFade 1.2s forwards ease-out;
             z-index: 10;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            font-size: 0.875rem;
+            padding: 10px 14px;
+            animation-duration: 2.4s;
         }
 
         @keyframes popFade {
@@ -118,32 +111,21 @@
             }
         }
 
-        /* Container for absolute positioning of popups */
-        .box {
-            position: relative;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 2500px) {
-            #grid {
-                grid-template-columns: repeat(auto-fill, 20px);
-                max-width: 100%;
-            }
-        }
-
-        /* Modal Overlay & Card */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             background-color: rgba(2, 8, 23, 0.8);
             backdrop-filter: blur(4px);
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.open {
+            display: flex;
         }
 
         .modal-card {
@@ -167,23 +149,14 @@
 
         .modal-description {
             font-size: 0.875rem;
-            color: #64748b;
+            color: var(--muted-foreground);
             margin: 0;
         }
 
-        .modal-input {
-            flex: 1;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.875rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .modal-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px var(--primary);
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
         }
 
         .modal-button {
@@ -201,125 +174,259 @@
             transition: opacity 0.2s;
         }
 
+        .modal-button.secondary {
+            background: var(--muted);
+            color: var(--foreground);
+        }
+
         .modal-button:hover {
             opacity: 0.9;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 24px 12px;
+            }
+
+            .page-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 
 <body>
-
-    <!-- Username Modal Overlay -->
-    <div id="usernameModal" class="modal-overlay">
+    <div id="signupModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
         <div class="modal-card">
-            <h2 class="modal-title">Welcome</h2>
-            <p class="modal-description">Enter your name to start checking boxes.</p>
-            <input type="text" id="nameInput" class="modal-input" placeholder="Your name (max 10 chars)" maxlength="10"
-                autocomplete="off" autofocus>
-            <button id="joinBtn" class="modal-button">Join</button>
+            <h2 id="signupTitle" class="modal-title">Sign up to check a box</h2>
+            <p class="modal-description">Use the secure OIDC signup before adding your checkmark to the million-box grid.</p>
+            <div class="modal-actions">
+                <button id="closeSignupBtn" class="modal-button secondary" type="button">Cancel</button>
+                <button id="signupBtn" class="modal-button" type="button">Sign up</button>
+            </div>
         </div>
     </div>
 
-    <h1>10000 Boxes</h1>
-    <div id="grid"></div>
+    <header class="page-header">
+        <h1>1 Million Boxes</h1>
+        <div id="authStatus" class="status">Checking signup status...</div>
+    </header>
+
+    <div id="gridShell" class="grid-shell">
+        <canvas id="gridCanvas" aria-label="One million checkable boxes"></canvas>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let userName = "Anon";
+        const TOTAL_BOXES = 1000000;
+        const COLUMNS = 1000;
+        const CELL_SIZE = 6;
+        const ROWS = Math.ceil(TOTAL_BOXES / COLUMNS);
+        const CANVAS_WIDTH = COLUMNS * CELL_SIZE;
+        const CANVAS_HEIGHT = ROWS * CELL_SIZE;
 
-        // Handle Modal Setup
-        const modalOverlay = document.getElementById('usernameModal');
-        const nameInput = document.getElementById('nameInput');
-        const joinBtn = document.getElementById('joinBtn');
+        const gridShell = document.getElementById('gridShell');
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+        const authStatus = document.getElementById('authStatus');
+        const signupModal = document.getElementById('signupModal');
+        const signupBtn = document.getElementById('signupBtn');
+        const closeSignupBtn = document.getElementById('closeSignupBtn');
 
-        nameInput.focus();
+        const checkedBoxes = new Set();
+        let socket = null;
+        let isAuthenticated = false;
+        let currentUserName = 'Signed in';
 
-        function joinGame() {
-            const inputVal = nameInput.value.substring(0, 10).trim();
-            if (inputVal) {
-                userName = inputVal;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+        canvas.style.width = `${CANVAS_WIDTH}px`;
+        canvas.style.height = `${CANVAS_HEIGHT}px`;
+
+        function drawGrid() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.fillStyle = getCss('--background');
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            ctx.strokeStyle = getCss('--border');
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let x = 0; x <= CANVAS_WIDTH; x += CELL_SIZE) {
+                ctx.moveTo(x + 0.5, 0);
+                ctx.lineTo(x + 0.5, CANVAS_HEIGHT);
             }
-            modalOverlay.style.display = 'none';
+            for (let y = 0; y <= CANVAS_HEIGHT; y += CELL_SIZE) {
+                ctx.moveTo(0, y + 0.5);
+                ctx.lineTo(CANVAS_WIDTH, y + 0.5);
+            }
+            ctx.stroke();
+
+            checkedBoxes.forEach(drawCheckedBox);
         }
 
-        joinBtn.addEventListener('click', joinGame);
-        nameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') joinGame();
-        });
+        function drawCheckedBox(index) {
+            const { x, y } = getCellPosition(index);
+            ctx.fillStyle = getCss('--primary');
+            ctx.fillRect(x + 1, y + 1, CELL_SIZE - 1, CELL_SIZE - 1);
 
-        const socket = io();
+            ctx.strokeStyle = getCss('--primary-foreground');
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 2, y + 3);
+            ctx.lineTo(x + 3, y + 5);
+            ctx.lineTo(x + 5, y + 2);
+            ctx.stroke();
+        }
 
-        const grid = document.getElementById('grid');
-        const TOTAL_BOXES = 10000;
+        function clearBox(index) {
+            const { x, y } = getCellPosition(index);
+            ctx.fillStyle = getCss('--background');
+            ctx.fillRect(x + 1, y + 1, CELL_SIZE - 1, CELL_SIZE - 1);
+            ctx.strokeStyle = getCss('--border');
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 0.5, y + 0.5, CELL_SIZE, CELL_SIZE);
+        }
 
-        const fragment = document.createDocumentFragment();
+        function getCellPosition(index) {
+            return {
+                x: (index % COLUMNS) * CELL_SIZE,
+                y: Math.floor(index / COLUMNS) * CELL_SIZE,
+            };
+        }
 
-        for (let i = 0; i < TOTAL_BOXES; i++) {
-            const box = document.createElement('div');
-            box.className = 'box';
-            box.dataset.index = i;
+        function getCss(variable) {
+            return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+        }
 
-            box.addEventListener('click', () => {
-                const isChecked = !box.classList.contains('checked');
+        function getIndexFromPointer(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) * (CANVAS_WIDTH / rect.width));
+            const y = Math.floor((event.clientY - rect.top) * (CANVAS_HEIGHT / rect.height));
+            const column = Math.floor(x / CELL_SIZE);
+            const row = Math.floor(y / CELL_SIZE);
+            const index = row * COLUMNS + column;
+            return index >= 0 && index < TOTAL_BOXES ? index : null;
+        }
 
-                if (isChecked) {
-                    // Check logic - Broadcast the event with name
-                    box.classList.add('checked');
-                    socket.emit('box_clicked', { index: i, checked: true, name: userName });
+        function openSignupModal() {
+            signupModal.classList.add('open');
+            signupBtn.focus();
+        }
+
+        function closeSignupModal() {
+            signupModal.classList.remove('open');
+        }
+
+        function showNamePop(index, name) {
+            const { x, y } = getCellPosition(index);
+            const pop = document.createElement('div');
+            pop.className = 'name-pop';
+            pop.textContent = name;
+            pop.style.left = `${x}px`;
+            pop.style.top = `${y - 25}px`;
+            gridShell.appendChild(pop);
+            setTimeout(() => pop.remove(), 1200);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2400);
+        }
+
+        async function loadAuthState() {
+            const response = await fetch('/auth/me', { credentials: 'same-origin' });
+            const data = await response.json();
+            isAuthenticated = Boolean(data.authenticated);
+            currentUserName = data.user?.name || data.user?.email || 'Signed in';
+            authStatus.textContent = isAuthenticated
+                ? `Signed in as ${currentUserName}. Limit: 10 checks per 10 seconds.`
+                : 'Sign up before checking a box.';
+
+            if (isAuthenticated) {
+                connectSocket();
+            }
+        }
+
+        function connectSocket() {
+            socket = io();
+
+            socket.on('initial_box_states', (boxStates) => {
+                checkedBoxes.clear();
+                for (let i = 0; i < boxStates.length; i++) {
+                    if (boxStates[i] === 1) {
+                        checkedBoxes.add(i);
+                    }
+                }
+                drawGrid();
+            });
+
+            socket.on('box_clicked', (click) => {
+                if (click.checked) {
+                    checkedBoxes.add(click.index);
+                    drawCheckedBox(click.index);
+                    if (click.name) {
+                        showNamePop(click.index, click.name);
+                    }
                 } else {
-                    // Uncheck logic - Update UI, Broadcast WITHOUT name
-                    box.classList.remove('checked');
-                    socket.emit('box_clicked', { index: i, checked: false });
+                    checkedBoxes.delete(click.index);
+                    clearBox(click.index);
                 }
             });
 
-            fragment.appendChild(box);
+            socket.on('rate_limited', (limit) => {
+                if (typeof limit.index === 'number') {
+                    checkedBoxes.delete(limit.index);
+                    clearBox(limit.index);
+                }
+                showToast(limit.message || 'Slow down before checking more boxes.');
+            });
+
+            socket.on('connect_error', () => {
+                isAuthenticated = false;
+                authStatus.textContent = 'Sign up before checking a box.';
+            });
         }
 
-        grid.appendChild(fragment);
+        canvas.addEventListener('click', (event) => {
+            const index = getIndexFromPointer(event);
+            if (index === null) {
+                return;
+            }
 
-        //fetch data from redis and update the UI
-        socket.on('initial_box_states', (boxStates) => {
-            for (let i = 0; i < boxStates.length; i++) {
-                const box = document.querySelector(`.box[data-index="${i}"]`);
-                if (box) {
-                    if (boxStates[i] === 1) {
-                        box.classList.add('checked');
-                    } else {
-                        box.classList.remove('checked');
-                    }
-                }
+            if (!isAuthenticated || !socket?.connected) {
+                openSignupModal();
+                return;
+            }
+
+            const checked = !checkedBoxes.has(index);
+            if (checked) {
+                checkedBoxes.add(index);
+                drawCheckedBox(index);
+            } else {
+                checkedBoxes.delete(index);
+                clearBox(index);
+            }
+
+            socket.emit('box_clicked', { index, checked });
+        });
+
+        signupBtn.addEventListener('click', () => {
+            window.location.href = '/auth/login';
+        });
+        closeSignupBtn.addEventListener('click', closeSignupModal);
+        signupModal.addEventListener('click', (event) => {
+            if (event.target === signupModal) {
+                closeSignupModal();
             }
         });
 
-        socket.on('connect', () => {
-            console.log('Connected to server:', socket.id);
-        });
-
-        socket.on('box_clicked', (click) => {
-            const box = document.querySelector(`.box[data-index="${click.index}"]`);
-            if (box) {
-                if (click.checked) {
-                    box.classList.add('checked');
-
-                    // Show name popup
-                    if (click.name) {
-                        const pop = document.createElement('div');
-                        pop.className = 'name-pop';
-                        pop.textContent = click.name;
-                        box.appendChild(pop);
-
-                        // Cleanup element after animation ends
-                        setTimeout(() => {
-                            if (box.contains(pop)) {
-                                box.removeChild(pop);
-                            }
-                        }, 1200);
-                    }
-                } else {
-                    box.classList.remove('checked');
-                }
-            }
+        drawGrid();
+        loadAuthState().catch(() => {
+            authStatus.textContent = 'Sign up before checking a box.';
         });
     </script>
 </body>

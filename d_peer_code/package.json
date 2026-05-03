@@ -1,0 +1,15 @@
+{
+  "name": "d_peer_code",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PeerCode — 1v1 live frontend challenges",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -C client run build",
+    "start:server": "node server/src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.2"
+}

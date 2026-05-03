@@ -1,29 +1,26 @@
 {
-  "name": "c_box",
+  "name": "live_location",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.33.2",
   "dependencies": {
-    "@socket.io/redis-adapter": "^8.3.0",
-    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "express-session": "^1.19.0",
-    "ioredis": "^5.10.1",
-    "mongoose": "^9.5.0",
-    "openid-client": "^6.8.4",
+    "express-session": "^1.18.2",
+    "kafkajs": "^2.2.4",
+    "openid-client": "^6.8.1",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0"
   }
 }
