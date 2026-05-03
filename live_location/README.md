@@ -2,6 +2,8 @@
 
 A real-time location sharing app built with Express, Socket.IO, Kafka, Leaflet, and OIDC authentication. Users sign in through an OpenID Connect provider, share their browser geolocation, and see other authenticated users update live on a map.
 
+# Video Link: https://youtu.be/Bn5C89RSpvQ
+
 ## Project Overview
 
 This project demonstrates authenticated real-time location streaming:
