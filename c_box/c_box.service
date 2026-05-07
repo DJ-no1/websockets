@@ -1,0 +1,23 @@
+[Unit]
+Description=C Box - Real-time Collaborative Canvas
+After=network.target redis-server.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=c_box
+WorkingDirectory=/home/c_box/c_box
+EnvironmentFile=/home/c_box/c_box/.env
+ExecStart=/usr/local/bin/pnpm start
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=c_box
+
+# Process management
+KillMode=process
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
